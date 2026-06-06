@@ -161,3 +161,12 @@ async def health():
         "known_nodes": len(_known_nodes),
         "cache_populated": bool(_cache),
     }
+
+
+@app.get("/status")
+async def status():
+    return {
+        "service": "result_aggregator",
+        "status": "online",
+        "known_nodes": len(_known_nodes),
+    }

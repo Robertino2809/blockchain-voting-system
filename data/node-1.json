@@ -25,5 +25,23 @@
     "term": 1,
     "nonce": 964,
     "hash": "000bbc4f5b0e75cb4ae70dc7bdf860e42cef528d1a1d7c4187b54b72a0586a70"
+  },
+  {
+    "index": 2,
+    "timestamp": 1780748082.797612,
+    "votes": [
+      {
+        "voter_id": "charlie",
+        "candidate": "Kandidat A"
+      },
+      {
+        "voter_id": "diana",
+        "candidate": "Kandidat B"
+      }
+    ],
+    "previous_hash": "000bbc4f5b0e75cb4ae70dc7bdf860e42cef528d1a1d7c4187b54b72a0586a70",
+    "term": 1,
+    "nonce": 3338,
+    "hash": "000467355d693b33c97f76bc0a2b8817b0756a120ffc32bc856d06a8fbf1b3ee"
   }
 ]
