@@ -1,0 +1,29 @@
+[
+  {
+    "index": 0,
+    "timestamp": 1780743760.7753909,
+    "votes": [],
+    "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+    "term": 0,
+    "nonce": 0,
+    "hash": "ed18441d4e87be85034eea87b20d8bac0e4d4974c189259d15976b6d39a76417"
+  },
+  {
+    "index": 1,
+    "timestamp": 1780744015.549711,
+    "votes": [
+      {
+        "voter_id": "alice",
+        "candidate": "Kandidat A"
+      },
+      {
+        "voter_id": "bob",
+        "candidate": "Kandidat B"
+      }
+    ],
+    "previous_hash": "ed18441d4e87be85034eea87b20d8bac0e4d4974c189259d15976b6d39a76417",
+    "term": 1,
+    "nonce": 964,
+    "hash": "000bbc4f5b0e75cb4ae70dc7bdf860e42cef528d1a1d7c4187b54b72a0586a70"
+  }
+]
