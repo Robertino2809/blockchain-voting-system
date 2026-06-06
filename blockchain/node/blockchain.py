@@ -15,8 +15,9 @@ class Blockchain:
 
     def _create_genesis_block(self):
         genesis = Block(index=0, votes=[], previous_hash="0" * 64, term=0)
+        genesis.timestamp = 0.0  # Fiksni timestamp — isti hash na svim čvorovima
+        genesis.hash = genesis.calculate_hash()
         self.chain.append(genesis)
-        logger.info("Genesis blok kreiran")
 
     @property
     def last_block(self) -> Block:

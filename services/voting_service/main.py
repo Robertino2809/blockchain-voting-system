@@ -4,12 +4,14 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "../.."))
 
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException, status
+import httpx
+import asyncio
 from pydantic import BaseModel, Field
 
 from blockchain.node.blockchain import Blockchain
 from blockchain.storage.store import BlockchainStore
 from blockchain.consensus.raft import RaftNode, RaftState
-from blockchain.consensus.raft_server import router as raft_router, RaftRunner
+from blockchain.consensus.raft_server import router as raft_router, RaftRunner, set_raft_instance
 from shared.config import settings
 from shared.logging_config import setup_logging
 
@@ -23,6 +25,7 @@ raft = RaftNode(
     peers=settings.seed_peers,
 )
 raft_runner = RaftRunner(raft)
+set_raft_instance(raft)
 
 
 # ── Raft callbacks ───────────────────────────────────────────
@@ -40,6 +43,35 @@ def on_commit(entry):
 
 raft.on_become_leader(on_become_leader)
 raft.on_commit(on_commit)
+
+
+# ── Blockchain sync ──────────────────────────────────────────
+async def sync_blockchain_from_peers():
+    """Pri startu — dohvati blockchain od peera s najduljim lancem."""
+    if not raft.peers:
+        return
+
+    best_chain = None
+    best_length = len(blockchain.chain)
+
+    async with httpx.AsyncClient(timeout=settings.http_timeout) as client:
+        for peer in raft.peers:
+            try:
+                resp = await client.get(f"{peer}/blocks/chain")
+                data = resp.json()
+                if data["length"] > best_length:
+                    best_length = data["length"]
+                    best_chain = data["chain"]
+                    logger.info(f"Bolji lanac pronađen na {peer} — duljina {best_length}")
+            except Exception:
+                logger.warning(f"Sync nije uspio od {peer}")
+
+    if best_chain:
+        from blockchain.node.block import Block
+        blockchain.chain = [Block.from_dict(b) for b in best_chain]
+        blockchain.pending_votes = []
+        store.save()
+        logger.info(f"Blockchain sinkroniziran — {len(blockchain.chain)} blokova")
 
 
 # ── Pydantic modeli ──────────────────────────────────────────
@@ -72,6 +104,8 @@ async def lifespan(app: FastAPI):
 
     raft_runner.start()
     logger.info(f"Voting Service pokrenut | node_id={settings.node_id} | port={settings.node_port}")
+    await asyncio.sleep(2)
+    await sync_blockchain_from_peers()
 
     yield
 
@@ -141,7 +175,7 @@ async def cast_vote(request: VoteRequest):
 
 @app.post("/mine", response_model=MineResponse, status_code=status.HTTP_201_CREATED)
 async def mine_block():
-    """Rudari novi blok — samo leader."""
+    """Rudari novi blok — samo leader, pa replicira na followere."""
     if raft.state != RaftState.LEADER:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
@@ -156,10 +190,24 @@ async def mine_block():
         )
 
     store.save()
+
+    # Repliciraj blok na sve followere
+    block_data = block.to_dict()
+    async with httpx.AsyncClient(timeout=settings.http_timeout) as client:
+        for peer in raft.peers:
+            try:
+                resp = await client.post(
+                    f"{peer}/blocks/sync",
+                    json={"block": block_data}
+                )
+                logger.info(f"Blok #{block.index} repliciran na {peer} — status {resp.status_code}")
+            except Exception as e:
+                logger.warning(f"Replikacija bloka na {peer} neuspješna: {e}")
+
     return MineResponse(
         success=True,
-        message=f"Blok #{block.index} iskopan.",
-        block=block.to_dict(),
+        message=f"Blok #{block.index} iskopan i repliciran.",
+        block=block_data,
     )
 
 
@@ -182,6 +230,24 @@ async def get_results():
     }
 
 
+class BlockSyncRequest(BaseModel):
+    block: dict
+
+
+@app.post("/blocks/sync", status_code=status.HTTP_200_OK)
+async def sync_block(request: BlockSyncRequest):
+    """Follower prima replicirani blok od leadera."""
+    success = blockchain.append_block(request.block)
+    if not success:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Blok odbijen — neispravan hash ili previous_hash."
+        )
+    store.save()
+    logger.info(f"Blok #{request.block['index']} sinkroniziran od leadera")
+    return {"success": True, "chain_length": len(blockchain.chain)}
+
+
 @app.get("/status")
 async def get_status():
     return {
@@ -193,4 +259,14 @@ async def get_status():
         "pending_votes": len(blockchain.pending_votes),
         "is_valid": blockchain.is_valid(),
         "peers": raft.peers,
+    }
+
+
+@app.get("/blocks/chain")
+async def get_chain():
+    """Vrati cijeli blockchain — za sync novih/recovering čvorova."""
+    return {
+        "chain": blockchain.to_dict(),
+        "length": len(blockchain.chain),
+        "node_id": settings.node_id,
     }
