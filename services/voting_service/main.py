@@ -102,6 +102,8 @@ async def lifespan(app: FastAPI):
     else:
         logger.info("Svježi blockchain — kreiran genesis blok")
 
+    node_num = int(settings.node_id.split("-")[-1]) if settings.node_id[-1].isdigit() else 1
+    await asyncio.sleep(node_num * 2.0)
     raft_runner.start()
     logger.info(f"Voting Service pokrenut | node_id={settings.node_id} | port={settings.node_port}")
     await asyncio.sleep(2)
