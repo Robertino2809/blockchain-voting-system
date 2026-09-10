@@ -77,6 +77,32 @@ class RaftNode:
         return True
 
 
+    def request_vote(self, term: int, candidate_id: str, last_log_index: int, last_log_term: int) -> dict:
+        if term > self.current_term:
+            self._become_follower(term)
+
+        if term < self.current_term:
+            return {"term": self.current_term, "vote_granted": False}
+
+        if self.voted_for is not None and self.voted_for != candidate_id:
+            return {"term": self.current_term, "vote_granted": False}
+
+        my_last_index = self.log[-1].index if self.log else -1
+        my_last_term = self.log[-1].term if self.log else 0
+
+        log_ok = (
+            last_log_term > my_last_term
+            or (last_log_term == my_last_term and last_log_index >= my_last_index)
+        )
+
+        if not log_ok:
+            return {"term": self.current_term, "vote_granted": False}
+
+        self.voted_for = candidate_id
+        logger.info(f"Glas dan kandidatu {candidate_id} za term {term}")
+        return {"term": self.current_term, "vote_granted": True}
+
+
     def receive_vote(self, voter_id: str, term: int, vote_granted: bool):
         if self.state != RaftState.CANDIDATE:
             return

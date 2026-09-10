@@ -10,34 +10,20 @@
   },
   {
     "index": 1,
-    "timestamp": 1780777076.845002,
+    "timestamp": 1789044138.82114,
     "votes": [
       {
         "voter_id": "alice",
-        "candidate": "kandidat-A"
+        "candidate": "kandidat_A"
       },
       {
         "voter_id": "bob",
-        "candidate": "kandidat-B"
+        "candidate": "kandidat_B"
       }
     ],
     "previous_hash": "6175de079df12cbab0a869ed4960ff85b4ea49d17a0fc06bf786ec971aa56031",
-    "term": 69,
-    "nonce": 6562,
-    "hash": "000deceb8c8d5b4d0b199a2bfee789b79b778392f718012e179e82524a91d406"
-  },
-  {
-    "index": 2,
-    "timestamp": 1780777125.9097989,
-    "votes": [
-      {
-        "voter_id": "charlie",
-        "candidate": "kandidat-A"
-      }
-    ],
-    "previous_hash": "000deceb8c8d5b4d0b199a2bfee789b79b778392f718012e179e82524a91d406",
-    "term": 70,
-    "nonce": 660,
-    "hash": "000a3ff0ec089300cbca49320c2d450bd3ce8d5169526fa6d15a878269d4176b"
+    "term": 44,
+    "nonce": 1867,
+    "hash": "000d95bab4f68822423c5030ff60949bcfd5172529a20c508f4f972861ae3b8f"
   }
 ]
