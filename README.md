@@ -139,11 +139,9 @@ Jedan čvor mora biti `"state": "leader"`, ostali `"state": "follower"`.
 
 ### 2. Glasovanje
 
-Zahtjevi za glasovanje šalju se **samo na trenutnog leader čvor** — provjeri
-koji je to čvor u koraku 1, jer se leader bira nasumično i ne mora nužno biti
-node-1 (primjer ispod pretpostavlja da je leader na portu 8001, prilagodi port
-prema stvarnom statusu):
+Zahtjevi za glasovanje šalju se **samo na trenutnog leader čvor** — provjeri koji je to čvor u koraku 1, jer se leader bira nasumično i ne mora nužno biti node-1 (primjer ispod pretpostavlja da je leader na portu 8001, prilagodi port prema stvarnom statusu):
 
+```bash
 curl -s -X POST http://localhost:8001/votes \
   -H "Content-Type: application/json" \
   -d '{"voter_id": "alice", "candidate": "kandidat-A"}' | python3 -m json.tool
@@ -151,6 +149,7 @@ curl -s -X POST http://localhost:8001/votes \
 curl -s -X POST http://localhost:8001/votes \
   -H "Content-Type: application/json" \
   -d '{"voter_id": "bob", "candidate": "kandidat-B"}' | python3 -m json.tool
+```
 
 ### 3. Rudarenje bloka
 
@@ -170,25 +169,24 @@ Sva tri čvora moraju prikazati iste rezultate.
 
 ### 5. Test tolerancije na greške
 
-Ugasi leader čvor (Ctrl+C u terminalu node-1)
-Pričekaj re-election (~5s)
+```bash
+# Ugasi leader čvor (Ctrl+C u terminalu node-1)
+# Pričekaj re-election (~5s)
 sleep 5
 
-Provjeri novog leadera
+# Provjeri novog leadera
 curl -s http://localhost:8002/raft/status | python3 -m json.tool
 
-Pošalji glas kroz novog leadera
+# Pošalji glas kroz novog leadera
 curl -s -X POST http://localhost:8002/votes \
   -H "Content-Type: application/json" \
   -d '{"voter_id": "charlie", "candidate": "kandidat-A"}' | python3 -m json.tool
 
-Rudari blok da se charliejev glas stvarno upiše u lanac
-(bez ovoga se charlie neće pojaviti u /votes/results — glas ostaje
-u pending poolu dok se ne mineira)
+# Rudari blok da se charliejev glas stvarno upiše u lanac
 curl -s -X POST http://localhost:8002/mine | python3 -m json.tool
 
-Pokreni node-1 ponovo i pričekaj node recovery sync
-Nakon ~10s provjeri da je node-1 sinkroniziran i vidi charliejev blok
+# Pokreni node-1 ponovo i pričekaj node recovery sync
+# Nakon ~10s provjeri da je node-1 sinkroniziran i vidi charliejev blok
 curl -s http://localhost:8001/votes/results | python3 -m json.tool
 ```
 
