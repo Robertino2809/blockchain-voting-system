@@ -195,7 +195,7 @@ curl -s http://localhost:8001/votes/results | python3 -m json.tool
 pytest tests/ -v
 ```
 
-31 test — unit testovi za blockchain i Raft logiku, integracijski testovi za API endpointe.
+9 testova — integracijski testovi protiv FastAPI aplikacije (Raft leader election, glasovanje, dvostruko glasanje, mining/PoW, integritet lanca)
 
 ---
 
